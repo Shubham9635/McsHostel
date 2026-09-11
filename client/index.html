@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta property="og:image" content="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="description" content="HostelHub - Connect. Report. Improve. The smart hostel management platform for college students." />
+    <title>HostelHub — Smart Hostel Management</title>
+    <!-- Anti-flicker theme script: runs synchronously before React loads -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem("hh-theme") || "system";
+          var resolved =
+            pref === "system"
+              ? window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+              : pref;
+          document.documentElement.setAttribute("data-theme", resolved);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "hostelhub",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix client",
+    "dev:all": "npm run dev --prefix server & npm run dev --prefix client",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client"
+  }
+}
