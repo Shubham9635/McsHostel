@@ -1,13 +1,15 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User } from '../types';
 import { authApi } from '../services/api';
+import { supabase } from '../services/supabase';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<{ user: User; token: string }>;
   directLogin: (email: string) => Promise<{ user: User; token: string }>;
-  googleLogin: (email: string, name?: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
+  googleLogin: (email: string, name?: string, avatarUrl?: string | null) => Promise<{ user: User; token: string; is_new_user: boolean }>;
+  signInWithGoogle: () => Promise<void>;
   sendOtp: (email: string) => Promise<{ success: boolean; message: string; delivered_via_smtp?: boolean; smtp_error?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
   updateProfile: (data: Partial<User>) => Promise<User>;
@@ -63,14 +65,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { user: newUser, token: newToken };
   };
 
-  const googleLogin = async (email: string, name?: string) => {
-    const res = await authApi.googleLogin(email, name);
+  const googleLogin = async (email: string, name?: string, avatarUrl?: string | null) => {
+    const res = await authApi.googleLogin(email, name, avatarUrl);
     const { token: newToken, user: newUser, is_new_user } = res.data;
     localStorage.setItem('hh_token', newToken);
     localStorage.setItem('hh_user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
     return { user: newUser, token: newToken, is_new_user: !!is_new_user };
+  };
+
+  const signInWithGoogle = async () => {
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: callbackUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (data?.url) {
+      window.location.href = data.url;
+    }
   };
 
   const sendOtp = async (email: string) => {
@@ -101,10 +125,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('hh_user');
     setToken(null);
     setUser(null);
+    supabase.auth.signOut().catch(() => {});
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, directLogin, googleLogin, sendOtp, verifyOtp, updateProfile, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, directLogin, googleLogin, signInWithGoogle, sendOtp, verifyOtp, updateProfile, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

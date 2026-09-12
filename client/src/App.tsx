@@ -8,6 +8,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 // Auth
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 
 // Student
 import StudentLayout from './layouts/StudentLayout';
@@ -94,6 +95,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/login" element={
         !user ? <LoginPage /> :
         needsOnboarding(user) ? <Navigate to="/onboarding" replace /> :

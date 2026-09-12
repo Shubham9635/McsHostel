@@ -118,7 +118,7 @@ const GoogleIcon = () => (
 );
 
 export default function LoginPage() {
-  const { sendOtp, verifyOtp, updateProfile, directLogin, googleLogin } = useAuth();
+  const { sendOtp, verifyOtp, updateProfile, directLogin, googleLogin, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail]             = useState('');
@@ -186,6 +186,22 @@ export default function LoginPage() {
       setEmailError(msg);
       toast.error(msg);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleOAuth = async () => {
+    setLoading(true);
+    setEmailError(null);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      console.error('Google OAuth initialization error:', err);
+      const msg =
+        err?.message?.includes('Unsupported provider') || err?.error_description?.includes('not enabled')
+          ? 'Google sign-in is being connected. Please enable Google provider in your Supabase Auth dashboard or use Email Login / Direct Access.'
+          : err?.message || 'Failed to initialize Google sign-in. Please try again.';
+      toast.error(msg, { duration: 6000 });
       setLoading(false);
     }
   };
@@ -338,6 +354,27 @@ export default function LoginPage() {
         <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
         <p className="text-xs text-slate-500 leading-relaxed">We'll send a secure 6-digit verification code to your email.</p>
       </div>
+
+      {/* Subtle Divider */}
+      <div className="relative flex items-center justify-center my-2.5">
+        <div className="border-t border-[var(--border-color)] w-full" />
+        <span className="bg-[var(--bg-card)] px-3 text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+          or
+        </span>
+        <div className="border-t border-[var(--border-color)] w-full" />
+      </div>
+
+      {/* Real Google OAuth Login */}
+      <button
+        id="continue-with-google-btn"
+        type="button"
+        onClick={handleGoogleOAuth}
+        disabled={loading}
+        className="w-full h-[52px] rounded-2xl bg-white hover:bg-slate-50 dark:bg-slate-900/80 dark:hover:bg-slate-900 active:scale-[0.98] text-slate-800 dark:text-slate-100 font-bold text-sm tracking-wide transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-3 shadow-sm border border-slate-200 dark:border-slate-800 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      >
+        <GoogleIcon />
+        <span>Continue with Google</span>
+      </button>
 
       {/* Direct Login (No OTP) Shortcuts */}
       <div className="pt-3 border-t border-white/[0.08]">
