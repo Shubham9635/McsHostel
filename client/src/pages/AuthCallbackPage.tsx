@@ -16,7 +16,7 @@ export default function AuthCallbackPage() {
 
     const processAuth = async () => {
       try {
-        // 1. Check for errors in the URL search params (e.g. user cancelled)
+        // 1. Check for errors in the URL search params (e.g. user cancelled or server error)
         const params = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const error = params.get('error') || hashParams.get('error');
@@ -26,53 +26,67 @@ export default function AuthCallbackPage() {
           const message = errorDesc || 'Google sign-in was cancelled or failed.';
           setErrorMsg(message);
           toast.error(message);
-          setTimeout(() => navigate('/login', { replace: true }), 2500);
+          setTimeout(() => navigate('/login', { replace: true }), 3500);
           return;
         }
 
         setStatusText('Retrieving Google session...');
 
-        // 2. Fetch active session from Supabase
+        // 2. If an auth code is present in query parameters (PKCE flow), exchange it
+        const code = params.get('code');
+        if (code) {
+          try {
+            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (!exchangeError && exchangeData?.session) {
+              isHandled = true;
+              await handleSessionLogin(exchangeData.session);
+              return;
+            }
+          } catch (codeErr) {
+            console.warn('exchangeCodeForSession error, falling back to getSession:', codeErr);
+          }
+        }
+
+        // 3. Fetch active session from Supabase
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
           throw sessionError;
         }
 
-        // If session not ready yet in getSession, wait briefly or listen to authStateChange
-        let currentSession = session;
-        if (!currentSession) {
-          const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-            if (isHandled) return;
-            if (event === 'SIGNED_IN' && newSession) {
-              isHandled = true;
-              authListener.subscription.unsubscribe();
-              await handleSessionLogin(newSession);
-            }
-          });
-
-          // Timeout after 6 seconds if no session is received
-          setTimeout(() => {
-            if (!isHandled) {
-              authListener.subscription.unsubscribe();
-              setErrorMsg('Google session not found. Please try signing in again.');
-              toast.error('Google session not found.');
-              setTimeout(() => navigate('/login', { replace: true }), 2000);
-            }
-          }, 6000);
+        if (session) {
+          if (!isHandled) {
+            isHandled = true;
+            await handleSessionLogin(session);
+          }
           return;
         }
 
-        if (!isHandled) {
-          isHandled = true;
-          await handleSessionLogin(currentSession);
-        }
+        // 4. If session not ready yet, wait for onAuthStateChange
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+          if (isHandled) return;
+          if (event === 'SIGNED_IN' && newSession) {
+            isHandled = true;
+            authListener.subscription.unsubscribe();
+            await handleSessionLogin(newSession);
+          }
+        });
+
+        // Timeout after 6 seconds if no session is received
+        setTimeout(() => {
+          if (!isHandled) {
+            authListener.subscription.unsubscribe();
+            setErrorMsg('Google session not found. Please try signing in again.');
+            toast.error('Google session not found.');
+            setTimeout(() => navigate('/login', { replace: true }), 2500);
+          }
+        }, 6000);
       } catch (err: any) {
         console.error('Auth callback error:', err);
         const msg = err.response?.data?.error || err.message || 'Failed to authenticate with Google.';
         setErrorMsg(msg);
         toast.error(msg);
-        setTimeout(() => navigate('/login', { replace: true }), 2500);
+        setTimeout(() => navigate('/login', { replace: true }), 3000);
       }
     };
 
@@ -115,7 +129,7 @@ export default function AuthCallbackPage() {
         const msg = err.response?.data?.error || err.message || 'Failed to process Google sign-in.';
         setErrorMsg(msg);
         toast.error(msg);
-        setTimeout(() => navigate('/login', { replace: true }), 2500);
+        setTimeout(() => navigate('/login', { replace: true }), 3000);
       }
     };
 
