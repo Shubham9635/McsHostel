@@ -130,7 +130,8 @@ export default function LoginPage() {
   const [name, setName]               = useState('');
   const [hostel, setHostel]           = useState<string>(HOSTEL_OPTIONS[0]);
   const [room, setRoom]               = useState('');
-  const otpInputRefs                  = useRef<(HTMLInputElement | null)[]>([]);
+  const masterOtpInputRef             = useRef<HTMLInputElement | null>(null);
+  const [isOtpFocused, setIsOtpFocused] = useState(false);
 
   const validateEmail = (val: string): boolean => {
     const trimmed = val.trim();
@@ -230,118 +231,35 @@ export default function LoginPage() {
       setResendTimer(60);
       setOtpDigits(['', '', '', '', '', '']);
       toast.success(`Verification code sent to ${target}! Check your inbox`, { duration: 5000 });
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+      setTimeout(() => masterOtpInputRef.current?.focus(), 100);
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Failed to send verification code.';
       setEmailError(msg); toast.error(msg);
     } finally { setLoading(false); }
   };
 
-  const handleOtpChange = (i: number, value: string) => {
-    // 1. Empty/deleted
-    if (!value) {
-      const d = [...otpDigits];
-      d[i] = '';
-      setOtpDigits(d);
-      return;
-    }
-
-    const digitsOnly = value.replace(/\D/g, '');
-    if (!digitsOnly) {
-      const d = [...otpDigits];
-      d[i] = '';
-      setOtpDigits(d);
-      return;
-    }
-
-    // 2. Pasted or autofilled multiple digits (e.g. 6-digit paste or keyboard suggestion)
-    if (digitsOnly.length > 1) {
-      const pasteDigits = digitsOnly.slice(0, 6).split('');
-      const d = [...otpDigits];
-      for (let j = 0; j < 6; j++) {
-        d[j] = pasteDigits[j] || '';
-      }
-      setOtpDigits(d);
-      const nextFocus = Math.min(pasteDigits.length, 5);
-      setTimeout(() => {
-        otpInputRefs.current[nextFocus]?.focus();
-        otpInputRefs.current[nextFocus]?.select();
-      }, 20);
-      return;
-    }
-
-    // 3. Single digit typed
-    const d = [...otpDigits];
-    d[i] = digitsOnly;
-    setOtpDigits(d);
-
-    // Auto-advance to next box on mobile & desktop
-    if (i < 5) {
-      setTimeout(() => {
-        otpInputRefs.current[i + 1]?.focus();
-        otpInputRefs.current[i + 1]?.select();
-      }, 20);
-    }
-  };
-
-  const handleOtpKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' || e.keyCode === 8) {
-      if (!otpDigits[i] && i > 0) {
-        // Current box is empty -> clear previous box and focus it
-        e.preventDefault();
-        const d = [...otpDigits];
-        d[i - 1] = '';
-        setOtpDigits(d);
-        setTimeout(() => {
-          otpInputRefs.current[i - 1]?.focus();
-          otpInputRefs.current[i - 1]?.select();
-        }, 20);
-      } else if (otpDigits[i]) {
-        // Current box has digit -> clear it
-        const d = [...otpDigits];
-        d[i] = '';
-        setOtpDigits(d);
-      }
-    } else if (e.key === 'ArrowLeft' && i > 0) {
-      e.preventDefault();
-      otpInputRefs.current[i - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && i < 5) {
-      e.preventDefault();
-      otpInputRefs.current[i + 1]?.focus();
-    }
-  };
-
-  // Android Chrome beforeinput support for Backspace on empty inputs
-  const handleOtpBeforeInput = (i: number, e: React.FormEvent<HTMLInputElement>) => {
-    const inputType = (e.nativeEvent as any)?.inputType;
-    if (inputType === 'deleteContentBackward') {
-      if (!otpDigits[i] && i > 0) {
-        const d = [...otpDigits];
-        d[i - 1] = '';
-        setOtpDigits(d);
-        setTimeout(() => {
-          otpInputRefs.current[i - 1]?.focus();
-          otpInputRefs.current[i - 1]?.select();
-        }, 20);
-      }
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const paste = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (!paste) return;
-    const chars = paste.split('');
-    const d = [...otpDigits];
-    for (let j = 0; j < 6; j++) {
-      d[j] = chars[j] || '';
+  const handleMasterOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 6);
+    const d = ['', '', '', '', '', ''];
+    for (let j = 0; j < digitsOnly.length; j++) {
+      d[j] = digitsOnly[j];
     }
     setOtpDigits(d);
-    const focusIdx = Math.min(chars.length, 5);
-    setTimeout(() => {
-      otpInputRefs.current[focusIdx]?.focus();
-      otpInputRefs.current[focusIdx]?.select();
-    }, 20);
+  };
+
+  const handleBoxClick = () => {
+    if (masterOtpInputRef.current) {
+      masterOtpInputRef.current.focus();
+      const len = otpDigits.filter(Boolean).length;
+      masterOtpInputRef.current.setSelectionRange(len, len);
+    }
+  };
+
+  const handleMasterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && otpDigits.filter(Boolean).length === 6) {
+      e.preventDefault();
+      handleVerifyOtp(e);
+    }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -475,31 +393,53 @@ export default function LoginPage() {
         <p className="text-xs text-[var(--text-secondary)] leading-relaxed">Check your inbox and spam folder. Code expires in 10 minutes.</p>
       </div>
       <div>
-        <label className="block text-xs font-bold text-[var(--text-heading)] uppercase tracking-widest mb-2.5 text-center">Verification Code</label>
-        <div className="flex justify-between gap-1.5 sm:gap-2">
-          {otpDigits.map((digit, idx) => (
-            <input key={idx}
-              ref={el => { otpInputRefs.current[idx] = el; }}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              autoComplete={idx === 0 ? "one-time-code" : "off"}
-              maxLength={6}
-              value={digit}
-              onChange={e => handleOtpChange(idx, e.target.value)}
-              onKeyDown={e => handleOtpKeyDown(idx, e)}
-              onBeforeInput={e => handleOtpBeforeInput(idx, e)}
-              onPaste={handleOtpPaste}
-              onFocus={e => e.target.select()}
-              onClick={e => (e.target as HTMLInputElement).select()}
-              aria-label={`Digit ${idx + 1}`}
-              className={`flex-1 min-w-0 h-12 sm:h-14 text-center text-xl sm:text-2xl font-black rounded-xl transition-all duration-150 caret-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 ${
-                digit
-                  ? 'border-indigo-500/80 bg-indigo-500/10 shadow-sm shadow-indigo-500/20 text-[var(--text-heading)]'
-                  : 'border-[var(--border-input)] bg-[var(--input-bg)] text-[var(--text-heading)] hover:border-[var(--border-color)]'
-              }`}
-            />
-          ))}
+        <label className="block text-xs font-bold text-[var(--text-heading)] uppercase tracking-widest mb-2.5 text-center">
+          Verification Code
+        </label>
+        <div className="relative flex justify-between gap-1.5 sm:gap-2 cursor-pointer" onClick={handleBoxClick}>
+          {/* Master Native Input: captures mobile virtual keyboard typing, auto-advances, backspaces & pastes natively */}
+          <input
+            ref={masterOtpInputRef}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={otpDigits.join('')}
+            onChange={handleMasterOtpChange}
+            onFocus={() => setIsOtpFocused(true)}
+            onBlur={() => setIsOtpFocused(false)}
+            onKeyDown={handleMasterKeyDown}
+            aria-label="6-digit Verification Code"
+            className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer caret-transparent"
+          />
+
+          {/* 6 Visual Digit Boxes (100% Identical Design & Styling) */}
+          {otpDigits.map((digit, idx) => {
+            const currentLen = otpDigits.filter(Boolean).length;
+            const isCurrentActive = isOtpFocused && (
+              currentLen === idx || (idx === 5 && currentLen === 6)
+            );
+
+            return (
+              <div
+                key={idx}
+                className={`flex-1 min-w-0 h-12 sm:h-14 flex items-center justify-center text-center text-xl sm:text-2xl font-black rounded-xl transition-all duration-150 select-none border ${
+                  digit
+                    ? 'border-indigo-500/80 bg-indigo-500/10 shadow-sm shadow-indigo-500/20 text-[var(--text-heading)]'
+                    : isCurrentActive
+                    ? 'border-indigo-500/80 bg-indigo-500/5 ring-2 ring-indigo-500/50 text-[var(--text-heading)]'
+                    : 'border-[var(--border-input)] bg-[var(--input-bg)] text-[var(--text-heading)] hover:border-[var(--border-color)]'
+                }`}
+              >
+                {digit ? (
+                  digit
+                ) : isCurrentActive ? (
+                  <span className="inline-block w-0.5 h-6 sm:h-7 bg-indigo-500 rounded-full animate-pulse" />
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
       <button id="verify-code-btn" type="submit" disabled={loading || otpDigits.join('').length !== 6} className={btnGreen}>
