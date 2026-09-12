@@ -7,6 +7,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<{ user: User; token: string }>;
   directLogin: (email: string) => Promise<{ user: User; token: string }>;
+  googleLogin: (email: string, name?: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
   sendOtp: (email: string) => Promise<{ success: boolean; message: string; delivered_via_smtp?: boolean; smtp_error?: string; preview_otp?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
   updateProfile: (data: Partial<User>) => Promise<User>;
@@ -62,6 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { user: newUser, token: newToken };
   };
 
+  const googleLogin = async (email: string, name?: string) => {
+    const res = await authApi.googleLogin(email, name);
+    const { token: newToken, user: newUser, is_new_user } = res.data;
+    localStorage.setItem('hh_token', newToken);
+    localStorage.setItem('hh_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+    return { user: newUser, token: newToken, is_new_user: !!is_new_user };
+  };
+
   const sendOtp = async (email: string) => {
     const res = await authApi.sendOtp(email);
     return res.data;
@@ -93,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, directLogin, sendOtp, verifyOtp, updateProfile, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, directLogin, googleLogin, sendOtp, verifyOtp, updateProfile, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

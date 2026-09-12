@@ -33,6 +33,7 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) => api.post('/auth/login', { email, password }),
   directLogin: (email: string) => api.post('/auth/direct-login', { email }),
+  googleLogin: (email: string, name?: string) => api.post('/auth/google-login', { email, name }),
   sendOtp: (email: string) => api.post('/auth/send-otp', { email }),
   verifyOtp: (email: string, otp: string) => api.post('/auth/verify-otp', { email, otp }),
   me: () => api.get('/auth/me'),

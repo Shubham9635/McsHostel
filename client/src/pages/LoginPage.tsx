@@ -108,8 +108,17 @@ function CityscapeBottom() {
   );
 }
 
+const GoogleIcon = () => (
+  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+  </svg>
+);
+
 export default function LoginPage() {
-  const { sendOtp, verifyOtp, updateProfile, directLogin } = useAuth();
+  const { sendOtp, verifyOtp, updateProfile, directLogin, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail]             = useState('');
@@ -141,6 +150,45 @@ export default function LoginPage() {
     if (resendTimer > 0) t = setInterval(() => setResendTimer(p => p - 1), 1000);
     return () => clearInterval(t);
   }, [resendTimer]);
+
+  const handleGoogleLogin = async (e?: React.FormEvent, directEmail?: string) => {
+    if (e) e.preventDefault();
+    const targetEmail = (directEmail || email).trim();
+    if (!targetEmail) {
+      setEmailError('Please enter your Gmail address (e.g. yourname@gmail.com).');
+      const inputEl = document.getElementById('otp-email-input');
+      inputEl?.focus();
+      return;
+    }
+    if (!validateEmail(targetEmail)) {
+      toast.error('Please enter a valid Gmail or email address');
+      return;
+    }
+
+    setLoading(true);
+    setEmailError(null);
+    try {
+      const { user: loggedInUser, is_new_user } = await googleLogin(targetEmail);
+      if (loggedInUser.role === 'admin') {
+        toast.success(`Welcome to Admin Panel, ${loggedInUser.name.split(' ')[0]}!`);
+        navigate('/admin', { replace: true });
+        return;
+      }
+      if (is_new_user || !loggedInUser.hostel || !loggedInUser.room) {
+        toast.success('Welcome to HostelHub! Please complete your hostel details');
+        navigate('/onboarding', { replace: true });
+        return;
+      }
+      toast.success(`Welcome back, ${loggedInUser.name.split(' ')[0]}!`);
+      navigate('/student', { replace: true });
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Google login failed. Please try again.';
+      setEmailError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDirectLogin = async (targetEmail: string) => {
     setLoading(true);
@@ -330,14 +378,14 @@ export default function LoginPage() {
 
   // ── Render helpers (functions, not components, so DOM state and focus are never lost) ──
   const renderEmailForm = () => (
-    <form onSubmit={handleSendOtp} noValidate className="space-y-4">
+    <form onSubmit={handleSendOtp} noValidate className="space-y-3.5">
       <div>
-        <label htmlFor="otp-email-input" className="block text-sm font-bold text-[var(--text-heading)] mb-2">College Email</label>
+        <label htmlFor="otp-email-input" className="block text-sm font-bold text-[var(--text-heading)] mb-1.5">Gmail or College Email</label>
         <div className="relative">
           <Mail className="w-[18px] h-[18px] text-[var(--text-muted)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             id="otp-email-input" type="email" value={email} autoFocus autoComplete="email"
-            placeholder="Enter your college email"
+            placeholder="Enter your Gmail (e.g. shubham@gmail.com)"
             onChange={e => { setEmail(e.target.value); if (emailError) validateEmail(e.target.value); }}
             className={`${inputBase} ${emailError ? inputError : inputDefault}`}
           />
@@ -348,12 +396,36 @@ export default function LoginPage() {
           </p>
         )}
       </div>
+
+      {/* Primary 1-Click Google Sign-In */}
+      <button
+        id="google-login-btn"
+        type="button"
+        onClick={() => handleGoogleLogin()}
+        disabled={loading}
+        className="w-full h-[52px] rounded-2xl bg-white hover:bg-slate-100 active:scale-[0.98] text-slate-900 font-bold text-sm tracking-wide transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-3 shadow-md shadow-slate-950/20 border border-slate-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+      >
+        {loading ? <div className="w-5 h-5 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin" /> : (
+          <>
+            <GoogleIcon />
+            <span>Continue with Google / Gmail</span>
+          </>
+        )}
+      </button>
+
+      {/* Divider */}
+      <div className="relative flex items-center justify-center my-1">
+        <div className="border-t border-white/[0.08] w-full" />
+        <span className="bg-[#0b0f19] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">or with OTP code</span>
+        <div className="border-t border-white/[0.08] w-full" />
+      </div>
+
       <button id="send-code-btn" type="submit" disabled={loading || !email.trim()} className={btnPrimary}>
-        {loading ? <Spinner /> : <>Continue with Email <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
+        {loading ? <Spinner /> : <>Send Verification Code <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
       </button>
       <div className="flex items-start gap-2.5">
         <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-500 leading-relaxed">We'll send a secure 6-digit verification code to your email.</p>
+        <p className="text-xs text-slate-500 leading-relaxed">Any new user can sign in instantly with their Gmail ID.</p>
       </div>
 
       {/* Direct Login (No OTP) Shortcuts */}

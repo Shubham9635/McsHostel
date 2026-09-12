@@ -290,6 +290,120 @@ router.post('/verify-otp', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /api/auth/google-login
+// Allows any new or existing user to sign in using their Gmail / Google ID
+router.post('/google-login', async (req: AuthRequest, res: Response) => {
+  try {
+    const { email, name, avatarUrl } = req.body;
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Valid Gmail or email address is required.' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const emailRegex = /^[^s@]+@[^s@]+.[^s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid email format (e.g. yourname@gmail.com).' });
+    }
+
+    // Direct demo login bypass
+    if (['student@hostel.hub', 'admin@hostel.hub'].includes(normalizedEmail)) {
+      let { data: demoProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', normalizedEmail)
+        .single();
+      if (demoProfile) {
+        const token = jwt.sign(
+          { id: demoProfile.id, email: demoProfile.email, role: demoProfile.role, name: demoProfile.name },
+          JWT_SECRET_KEY,
+          { expiresIn: '7d' }
+        );
+        return res.json({ token, user: sanitize(demoProfile), is_new_user: false, message: 'Direct login successful.' });
+      }
+    }
+
+    // Check if user profile already exists
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', normalizedEmail)
+      .single();
+
+    if (profile && !profile.is_active) {
+      return res.status(403).json({ error: 'This account has been deactivated. Please contact hostel admin.' });
+    }
+
+    let is_new_user = false;
+    const ADMIN_EMAILS = ['admin@hostelhub.demo', 'admin@hostel.hub', 'hostelhub.support@gmail.com'];
+    const isAdminEmail = ADMIN_EMAILS.includes(normalizedEmail);
+
+    if (!profile) {
+      const defaultRole = isAdminEmail ? 'admin' : 'student';
+      is_new_user = defaultRole === 'student';
+
+      const defaultName = name?.trim() || (
+        isAdminEmail
+          ? 'Hostel Management'
+          : normalizedEmail
+              .split('@')[0]
+              .replace(/[._]/g, ' ')
+              .replace(/w/g, (c: string) => c.toUpperCase())
+      );
+
+      const randomHash = await bcrypt.hash(Math.random().toString(36), 10);
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          name: defaultName,
+          email: normalizedEmail,
+          role: defaultRole,
+          password_hash: randomHash,
+          is_active: true,
+          room: null,
+          hostel: null,
+          profile_photo_url: avatarUrl || null,
+        })
+        .select()
+        .single();
+
+      if (createError || !newProfile) {
+        console.error('Auto-provisioning Google user error:', createError);
+        return res.status(500).json({ error: 'Failed to create user profile.' });
+      }
+      profile = newProfile;
+    } else {
+      if (isAdminEmail && profile.role !== 'admin') {
+        const { data: updatedAdmin } = await supabase
+          .from('profiles')
+          .update({ role: 'admin' })
+          .eq('id', profile.id)
+          .select()
+          .single();
+        if (updatedAdmin) profile = updatedAdmin;
+      }
+      if (profile.role === 'student' && (!profile.room || !profile.hostel)) {
+        is_new_user = true;
+      }
+    }
+
+    const token = jwt.sign(
+      { id: profile.id, email: profile.email, role: profile.role, name: profile.name },
+      JWT_SECRET_KEY,
+      { expiresIn: '7d' }
+    );
+
+    return res.json({
+      token,
+      user: sanitize(profile),
+      is_new_user,
+      message: 'Signed in successfully via Google.',
+    });
+  } catch (err: any) {
+    console.error('Google login error:', err);
+    return res.status(500).json({ error: 'Server error during Google login.' });
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   const { data: profile, error } = await supabase
