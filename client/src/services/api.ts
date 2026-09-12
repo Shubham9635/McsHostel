@@ -1,6 +1,19 @@
 import axios from 'axios';
 
-const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api';
+const getApiBase = () => {
+  if (typeof window !== 'undefined') {
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.');
+    if (!isLocalhost) {
+      return 'https://mcshostel.onrender.com/api';
+    }
+  }
+  return (import.meta.env.VITE_API_URL || 'http://localhost:3001') + '/api';
+};
+
+const API_BASE = getApiBase();
 
 export const api = axios.create({
   baseURL: API_BASE,
