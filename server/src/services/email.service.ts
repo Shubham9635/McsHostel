@@ -13,8 +13,8 @@ export interface SendOtpResult {
 }
 
 export async function sendOtpEmail({ to, otp, userName }: SendOtpOptions): Promise<SendOtpResult> {
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.replace(/\s+/g, ''); // strip spaces from Google app password
+  const user = (process.env.SMTP_USER || "hostelhub.support@gmail.com").trim();
+  const pass = (process.env.SMTP_PASS || "hjppinfawrvmkvsi").replace(/\s+/g, ""); // strip spaces from Google app password
   const host = process.env.SMTP_HOST || (user?.includes('@gmail.com') ? 'smtp.gmail.com' : undefined);
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const from = process.env.EMAIL_FROM || (user ? `"HostelHub" <${user}>` : '"HostelHub" <no-reply@hostelhub.app>');

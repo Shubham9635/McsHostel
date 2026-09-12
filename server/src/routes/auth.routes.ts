@@ -300,7 +300,7 @@ router.post('/google-login', async (req: AuthRequest, res: Response) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const emailRegex = /^[^s@]+@[^s@]+.[^s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({ error: 'Please enter a valid email format (e.g. yourname@gmail.com).' });
     }

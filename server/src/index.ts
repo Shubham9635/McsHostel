@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../server/.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
 import express from 'express';
 import cors from 'cors';
 import { initDB } from './db/init';
