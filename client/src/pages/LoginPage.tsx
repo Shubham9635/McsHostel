@@ -380,12 +380,12 @@ export default function LoginPage() {
   const renderEmailForm = () => (
     <form onSubmit={handleSendOtp} noValidate className="space-y-3.5">
       <div>
-        <label htmlFor="otp-email-input" className="block text-sm font-bold text-[var(--text-heading)] mb-1.5">Gmail or College Email</label>
+        <label htmlFor="otp-email-input" className="block text-sm font-bold text-[var(--text-heading)] mb-2">College Email</label>
         <div className="relative">
           <Mail className="w-[18px] h-[18px] text-[var(--text-muted)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             id="otp-email-input" type="email" value={email} autoFocus autoComplete="email"
-            placeholder="Enter your Gmail (e.g. shubham@gmail.com)"
+            placeholder="Enter your college or Gmail address"
             onChange={e => { setEmail(e.target.value); if (emailError) validateEmail(e.target.value); }}
             className={`${inputBase} ${emailError ? inputError : inputDefault}`}
           />
@@ -397,35 +397,12 @@ export default function LoginPage() {
         )}
       </div>
 
-      {/* Primary 1-Click Google Sign-In */}
-      <button
-        id="google-login-btn"
-        type="button"
-        onClick={() => handleGoogleLogin()}
-        disabled={loading}
-        className="w-full h-[52px] rounded-2xl bg-white hover:bg-slate-100 active:scale-[0.98] text-slate-900 font-bold text-sm tracking-wide transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-3 shadow-md shadow-slate-950/20 border border-slate-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-      >
-        {loading ? <div className="w-5 h-5 border-2 border-slate-400 border-t-slate-800 rounded-full animate-spin" /> : (
-          <>
-            <GoogleIcon />
-            <span>Continue with Google / Gmail</span>
-          </>
-        )}
-      </button>
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center my-1">
-        <div className="border-t border-white/[0.08] w-full" />
-        <span className="bg-[#0b0f19] px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">or with OTP code</span>
-        <div className="border-t border-white/[0.08] w-full" />
-      </div>
-
       <button id="send-code-btn" type="submit" disabled={loading || !email.trim()} className={btnPrimary}>
-        {loading ? <Spinner /> : <>Send Verification Code <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
+        {loading ? <Spinner /> : <>Continue with Email <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" /></>}
       </button>
       <div className="flex items-start gap-2.5">
         <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-500 leading-relaxed">Any new user can sign in instantly with their Gmail ID.</p>
+        <p className="text-xs text-slate-500 leading-relaxed">We'll send a secure 6-digit verification code to your email.</p>
       </div>
 
       {/* Direct Login (No OTP) Shortcuts */}
