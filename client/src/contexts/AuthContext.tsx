@@ -8,7 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ user: User; token: string }>;
   directLogin: (email: string) => Promise<{ user: User; token: string }>;
   googleLogin: (email: string, name?: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
-  sendOtp: (email: string) => Promise<{ success: boolean; message: string; delivered_via_smtp?: boolean; smtp_error?: string; preview_otp?: string }>;
+  sendOtp: (email: string) => Promise<{ success: boolean; message: string; delivered_via_smtp?: boolean; smtp_error?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
   updateProfile: (data: Partial<User>) => Promise<User>;
   logout: () => void;

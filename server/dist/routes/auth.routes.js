@@ -145,12 +145,8 @@ router.post('/send-otp', async (req, res) => {
         }
         return res.json({
             success: true,
-            message: emailResult.delivered_via_smtp
-                ? `Verification code sent to ${normalizedEmail}`
-                : `Verification code generated for ${normalizedEmail}`,
+            message: `Verification code sent to ${normalizedEmail}`,
             delivered_via_smtp: emailResult.delivered_via_smtp,
-            smtp_error: emailResult.smtp_error,
-            preview_otp: emailResult.delivered_via_smtp ? undefined : otp,
         });
     }
     catch (err) {
