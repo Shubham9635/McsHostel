@@ -455,12 +455,18 @@ export default function LoginPage() {
         </button>
       </div>
       {previewOtp ? (
-        <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-xs text-amber-300 font-medium">Auto-filled test code: <strong className="font-mono text-white text-sm tracking-wider">{previewOtp}</strong></span>
+        <div className="flex items-center justify-between p-3 px-3.5 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
+              <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <p className="text-xs font-semibold text-indigo-950 dark:text-indigo-200 truncate">
+              Auto-filled code: <strong className="font-mono font-black text-indigo-700 dark:text-indigo-300 text-sm tracking-widest ml-1 bg-white dark:bg-indigo-900/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-700/50 shadow-xs">{previewOtp}</strong>
+            </p>
           </div>
-          <span className="text-[10px] bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">Preview Code</span>
+          <span className="text-[10px] bg-indigo-600 dark:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-full shrink-0 shadow-sm uppercase tracking-wider">
+            Auto-Filled
+          </span>
         </div>
       ) : (
         <div className="flex items-start gap-3 p-3.5 bg-sky-500/10 border border-sky-500/20 rounded-xl">
