@@ -96,51 +96,29 @@ export default function AdminDashboard() {
   const greeting =
     currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening';
 
-  // Compute Trend Data for Activity Chart based on complaint timestamps + realistic volume distribution
+  // Compute Trend Data for Activity Chart based purely on real student complaint records
   const getTrendData = () => {
     const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
     const result = [];
     const now = new Date();
-
-    // 7-day curated activity curve ensuring realistic volume
-    const curve7d = [
-      { rep: 3, res: 1 }, // 6 days ago (06 Sep)
-      { rep: 4, res: 1 }, // 5 days ago (07 Sep)
-      { rep: 5, res: 2 }, // 4 days ago (08 Sep)
-      { rep: 4, res: 2 }, // 3 days ago (09 Sep)
-      { rep: 3, res: 3 }, // 2 days ago (10 Sep): Resolve 3 and complaints 3
-      { rep: 5, res: 2 }, // yesterday (11 Sep)
-      { rep: 3, res: 1 }, // today (12 Sep)
-    ];
 
     for (let i = days - 1; i >= 0; i--) {
       const targetDate = subDays(now, i);
       const dateStr = format(targetDate, 'yyyy-MM-dd');
       const label = days <= 14 ? format(targetDate, 'dd MMM') : format(targetDate, 'dd/MM');
 
-      const actualReported = recentComplaints.filter(c => c.created_at?.split('T')[0] === dateStr).length;
-      const actualResolved = recentComplaints.filter(c => c.resolved_at?.split('T')[0] === dateStr).length;
+      // Count actual complaints submitted by students on this date
+      const reported = recentComplaints.filter(c => {
+        if (!c.created_at) return false;
+        return c.created_at.split('T')[0] === dateStr;
+      }).length;
 
-      let reported = 0;
-      let resolved = 0;
-
-      if (days === 7) {
-        const idx = (days - 1) - i;
-        const base = curve7d[idx] || { rep: 4, res: 2 };
-        reported = base.rep;
-        resolved = base.res;
-      } else {
-        const seed = (i * 7 + 11) % 5;
-        reported = 3 + seed; // 3 to 7
-        resolved = Math.max(1, Math.floor(reported * 0.5));
-        if (actualReported > 0) reported += actualReported;
-        if (actualResolved > 0) resolved = Math.min(reported, resolved + actualResolved);
-      }
-
-      // Enforce: resolved never exceeds complaints
-      if (resolved > reported) {
-        resolved = reported;
-      }
+      // Count actual complaints resolved on this date
+      const resolved = recentComplaints.filter(c => {
+        if (c.status !== 'resolved') return false;
+        const resolvedDate = (c.resolved_at || c.created_at)?.split('T')[0];
+        return resolvedDate === dateStr;
+      }).length;
 
       result.push({
         date: dateStr,
@@ -459,6 +437,7 @@ export default function AdminDashboard() {
                 tick={{ fill: '#94a3b8', fontSize: 11 }}
                 tickLine={false}
                 allowDecimals={false}
+                domain={[0, (dataMax: number) => Math.max(5, dataMax)]}
               />
               <Tooltip
                 contentStyle={{
