@@ -238,6 +238,7 @@ export default function LoginPage() {
   };
 
   const handleOtpChange = (i: number, value: string) => {
+    // 1. Empty/deleted
     if (!value) {
       const d = [...otpDigits];
       d[i] = '';
@@ -246,47 +247,57 @@ export default function LoginPage() {
     }
 
     const digitsOnly = value.replace(/\D/g, '');
-    if (!digitsOnly) return;
-
-    // Pasted or autofilled multiple digits
-    if (digitsOnly.length > 1) {
-      if (digitsOnly.length >= 4) {
-        const pasteDigits = digitsOnly.slice(0, 6).split('');
-        const d = [...otpDigits];
-        for (let j = 0; j < 6; j++) {
-          d[j] = pasteDigits[j] || '';
-        }
-        setOtpDigits(d);
-        const focusIdx = Math.min(pasteDigits.length, 5);
-        otpInputRefs.current[focusIdx]?.focus();
-        return;
-      }
-      // If 2-3 characters (user typed into already-filled input)
-      const newest = digitsOnly.slice(-1);
+    if (!digitsOnly) {
       const d = [...otpDigits];
-      d[i] = newest;
+      d[i] = '';
       setOtpDigits(d);
-      if (i < 5) otpInputRefs.current[i + 1]?.focus();
       return;
     }
 
-    // Single digit typed
+    // 2. Pasted or autofilled multiple digits (e.g. 6-digit paste or keyboard suggestion)
+    if (digitsOnly.length > 1) {
+      const pasteDigits = digitsOnly.slice(0, 6).split('');
+      const d = [...otpDigits];
+      for (let j = 0; j < 6; j++) {
+        d[j] = pasteDigits[j] || '';
+      }
+      setOtpDigits(d);
+      const nextFocus = Math.min(pasteDigits.length, 5);
+      setTimeout(() => {
+        otpInputRefs.current[nextFocus]?.focus();
+        otpInputRefs.current[nextFocus]?.select();
+      }, 20);
+      return;
+    }
+
+    // 3. Single digit typed
     const d = [...otpDigits];
     d[i] = digitsOnly;
     setOtpDigits(d);
-    if (i < 5) otpInputRefs.current[i + 1]?.focus();
+
+    // Auto-advance to next box on mobile & desktop
+    if (i < 5) {
+      setTimeout(() => {
+        otpInputRefs.current[i + 1]?.focus();
+        otpInputRefs.current[i + 1]?.select();
+      }, 20);
+    }
   };
 
   const handleOtpKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
+    if (e.key === 'Backspace' || e.keyCode === 8) {
       if (!otpDigits[i] && i > 0) {
+        // Current box is empty -> clear previous box and focus it
         e.preventDefault();
         const d = [...otpDigits];
         d[i - 1] = '';
         setOtpDigits(d);
-        otpInputRefs.current[i - 1]?.focus();
+        setTimeout(() => {
+          otpInputRefs.current[i - 1]?.focus();
+          otpInputRefs.current[i - 1]?.select();
+        }, 20);
       } else if (otpDigits[i]) {
-        e.preventDefault();
+        // Current box has digit -> clear it
         const d = [...otpDigits];
         d[i] = '';
         setOtpDigits(d);
@@ -297,6 +308,22 @@ export default function LoginPage() {
     } else if (e.key === 'ArrowRight' && i < 5) {
       e.preventDefault();
       otpInputRefs.current[i + 1]?.focus();
+    }
+  };
+
+  // Android Chrome beforeinput support for Backspace on empty inputs
+  const handleOtpBeforeInput = (i: number, e: React.FormEvent<HTMLInputElement>) => {
+    const inputType = (e.nativeEvent as any)?.inputType;
+    if (inputType === 'deleteContentBackward') {
+      if (!otpDigits[i] && i > 0) {
+        const d = [...otpDigits];
+        d[i - 1] = '';
+        setOtpDigits(d);
+        setTimeout(() => {
+          otpInputRefs.current[i - 1]?.focus();
+          otpInputRefs.current[i - 1]?.select();
+        }, 20);
+      }
     }
   };
 
@@ -311,7 +338,10 @@ export default function LoginPage() {
     }
     setOtpDigits(d);
     const focusIdx = Math.min(chars.length, 5);
-    otpInputRefs.current[focusIdx]?.focus();
+    setTimeout(() => {
+      otpInputRefs.current[focusIdx]?.focus();
+      otpInputRefs.current[focusIdx]?.select();
+    }, 20);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -458,6 +488,7 @@ export default function LoginPage() {
               value={digit}
               onChange={e => handleOtpChange(idx, e.target.value)}
               onKeyDown={e => handleOtpKeyDown(idx, e)}
+              onBeforeInput={e => handleOtpBeforeInput(idx, e)}
               onPaste={handleOtpPaste}
               onFocus={e => e.target.select()}
               onClick={e => (e.target as HTMLInputElement).select()}
