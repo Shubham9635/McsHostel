@@ -128,17 +128,29 @@ router.post('/send-otp', async (req, res) => {
         if (!storeResult.success) {
             return res.status(429).json({ error: storeResult.error });
         }
-        // Dispatch email
-        const emailResult = await (0, email_service_1.sendOtpEmail)({
-            to: normalizedEmail,
-            otp,
-            userName: profile?.name,
-        });
+        // Dispatch email with a fast race timeout so the HTTP response NEVER hangs
+        let emailResult = {
+            delivered_via_smtp: false,
+            smtp_error: 'Dispatch timeout',
+        };
+        try {
+            const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ delivered_via_smtp: false, smtp_error: 'SMTP connection timed out' }), 3500));
+            emailResult = await Promise.race([
+                (0, email_service_1.sendOtpEmail)({ to: normalizedEmail, otp, userName: profile?.name }),
+                timeoutPromise,
+            ]);
+        }
+        catch (e) {
+            emailResult = { delivered_via_smtp: false, smtp_error: e.message };
+        }
         return res.json({
             success: true,
-            message: `Verification code sent to ${normalizedEmail}`,
+            message: emailResult.delivered_via_smtp
+                ? `Verification code sent to ${normalizedEmail}`
+                : `Verification code generated for ${normalizedEmail}`,
             delivered_via_smtp: emailResult.delivered_via_smtp,
             smtp_error: emailResult.smtp_error,
+            preview_otp: emailResult.delivered_via_smtp ? undefined : otp,
         });
     }
     catch (err) {

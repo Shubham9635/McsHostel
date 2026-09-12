@@ -29,12 +29,18 @@ async function sendOtpEmail({ to, otp, userName }) {
                 ? {
                     service: 'gmail',
                     auth: { user, pass },
+                    connectionTimeout: 4000,
+                    greetingTimeout: 4000,
+                    socketTimeout: 4000,
                 }
                 : {
                     host: host || 'smtp.gmail.com',
                     port,
                     secure: port === 465,
                     auth: { user, pass },
+                    connectionTimeout: 4000,
+                    greetingTimeout: 4000,
+                    socketTimeout: 4000,
                 });
             const html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;">

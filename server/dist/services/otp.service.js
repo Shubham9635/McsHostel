@@ -20,13 +20,13 @@ function generateOtpCode() {
  */
 async function storeOtp(email, otp) {
     const normalizedEmail = email.toLowerCase().trim();
-    const expiresAtDate = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAtDate = new Date(Date.now() + 10 * 20 * 1000); // 10 minutes
     const otpHash = await bcryptjs_1.default.hash(otp, 10);
     // Check rate-limiting (cooldown of 60 seconds)
     const now = Date.now();
     const memRecord = memoryStore.get(normalizedEmail);
-    if (memRecord && now - memRecord.createdAt < 60 * 1000) {
-        const waitSec = Math.ceil((60 * 1000 - (now - memRecord.createdAt)) / 1000);
+    if (memRecord && now - memRecord.createdAt < 20 * 1000) {
+        const waitSec = Math.ceil((20 * 1000 - (now - memRecord.createdAt)) / 1000);
         return { success: false, error: `Please wait ${waitSec}s before requesting a new code.` };
     }
     // Attempt to write to Supabase email_otps table

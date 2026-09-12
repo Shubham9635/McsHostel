@@ -41,12 +41,18 @@ export async function sendOtpEmail({ to, otp, userName }: SendOtpOptions): Promi
           ? {
               service: 'gmail',
               auth: { user, pass },
+              connectionTimeout: 4000,
+              greetingTimeout: 4000,
+              socketTimeout: 4000,
             }
           : {
               host: host || 'smtp.gmail.com',
               port,
               secure: port === 465,
               auth: { user, pass },
+              connectionTimeout: 4000,
+              greetingTimeout: 4000,
+              socketTimeout: 4000,
             }
       );
 

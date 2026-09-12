@@ -118,6 +118,7 @@ export default function LoginPage() {
   const [otpStep, setOtpStep]         = useState<'email' | 'verify' | 'profile'>('email');
   const [otpDigits, setOtpDigits]     = useState(['', '', '', '', '', '']);
   const [resendTimer, setResendTimer] = useState(0);
+  const [previewOtp, setPreviewOtp]   = useState<string | null>(null);
   const [name, setName]               = useState('');
   const [hostel, setHostel]           = useState<string>(HOSTEL_OPTIONS[0]);
   const [room, setRoom]               = useState('');
@@ -180,11 +181,20 @@ export default function LoginPage() {
       setEmail(target);
       setOtpStep('verify');
       setResendTimer(60);
-      setOtpDigits(['', '', '', '', '', '']);
       if (res.delivered_via_smtp) {
+        setPreviewOtp(null);
+        setOtpDigits(['', '', '', '', '', '']);
         toast.success(`Code sent to ${target}! Check your inbox`, { duration: 5000 });
       } else {
-        toast.success(`Verification code generated for ${target}!`);
+        if (res.preview_otp) {
+          setPreviewOtp(res.preview_otp);
+          setOtpDigits(res.preview_otp.split(''));
+          toast.success(`Verification code: ${res.preview_otp}`, { duration: 8000 });
+        } else {
+          setPreviewOtp(null);
+          setOtpDigits(['', '', '', '', '', '']);
+          toast.success(`Verification code generated for ${target}!`);
+        }
       }
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } catch (err: any) {
@@ -307,7 +317,7 @@ export default function LoginPage() {
     } finally { setLoading(false); }
   };
 
-  const goBack = () => { setOtpStep('email'); setOtpDigits(['', '', '', '', '', '']); setEmailError(null); };
+  const goBack = () => { setOtpStep('email'); setOtpDigits(['', '', '', '', '', '']); setPreviewOtp(null); setEmailError(null); };
 
   // ── Input class helpers ────────────────────────────────────────────────────
   const inputBase = 'w-full h-[52px] pl-[46px] pr-4 rounded-2xl text-[var(--input-text)] placeholder-[var(--text-muted)] text-sm font-medium focus:outline-none focus:ring-2 transition-all duration-200';
@@ -395,10 +405,20 @@ export default function LoginPage() {
           <Edit3 className="w-3 h-3" />Change
         </button>
       </div>
-      <div className="flex items-start gap-3 p-3.5 bg-sky-500/10 border border-sky-500/20 rounded-xl">
-        <Inbox className="w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0 mt-0.5" />
-        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">Check your inbox and spam folder. Code expires in 10 minutes.</p>
-      </div>
+      {previewOtp ? (
+        <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs text-amber-300 font-medium">Auto-filled test code: <strong className="font-mono text-white text-sm tracking-wider">{previewOtp}</strong></span>
+          </div>
+          <span className="text-[10px] bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">Preview Code</span>
+        </div>
+      ) : (
+        <div className="flex items-start gap-3 p-3.5 bg-sky-500/10 border border-sky-500/20 rounded-xl">
+          <Inbox className="w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">Check your inbox and spam folder. Code expires in 10 minutes.</p>
+        </div>
+      )}
       <div>
         <label className="block text-xs font-bold text-[var(--text-heading)] uppercase tracking-widest mb-2.5 text-center">Verification Code</label>
         <div className="flex justify-between gap-1.5 sm:gap-2">

@@ -7,7 +7,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<{ user: User; token: string }>;
   directLogin: (email: string) => Promise<{ user: User; token: string }>;
-  sendOtp: (email: string) => Promise<{ success: boolean; message: string; delivered_via_smtp?: boolean; smtp_error?: string }>;
+  sendOtp: (email: string) => Promise<{ success: boolean; message: string; delivered_via_smtp?: boolean; smtp_error?: string; preview_otp?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ user: User; token: string; is_new_user: boolean }>;
   updateProfile: (data: Partial<User>) => Promise<User>;
   logout: () => void;
