@@ -267,12 +267,14 @@ export default function OnboardingPage() {
                     <BedDouble className="w-[18px] h-[18px] text-[var(--text-muted)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       id="onboarding-room-input"
-                      type="text"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={room}
-                      onChange={e => setRoom(e.target.value)}
-                      placeholder="E.G. B-204, 102"
+                      onChange={e => setRoom(e.target.value.replace(/\D/g, ''))}
+                      placeholder="e.g. 204, 102"
                       required
-                      className="w-full h-[52px] pl-11 pr-4 rounded-xl bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--input-text)] placeholder-[var(--text-muted)] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all hover:border-[var(--border-color)] uppercase"
+                      className="w-full h-[52px] pl-11 pr-4 rounded-xl bg-[var(--input-bg)] border border-[var(--border-input)] text-[var(--input-text)] placeholder-[var(--text-muted)] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all hover:border-[var(--border-color)]"
                     />
                   </div>
                 </div>

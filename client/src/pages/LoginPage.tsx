@@ -485,9 +485,9 @@ export default function LoginPage() {
         <label htmlFor="room-input" className="block text-sm font-bold text-[var(--text-heading)] mb-2">Room Number <span className="text-red-400">*</span></label>
         <div className="relative">
           <DoorClosed className="w-[18px] h-[18px] text-[var(--text-muted)] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input id="room-input" type="text" value={room} placeholder="e.g. B-204" required
-            onChange={e => setRoom(e.target.value)}
-            className={`${inputBase} ${inputDefault} uppercase`} />
+          <input id="room-input" type="tel" inputMode="numeric" pattern="[0-9]*" value={room} placeholder="e.g. 204" required
+            onChange={e => setRoom(e.target.value.replace(/\D/g, ''))}
+            className={`${inputBase} ${inputDefault}`} />
         </div>
       </div>
       <button id="complete-profile-btn" type="submit" disabled={loading || !name.trim() || !room.trim()}

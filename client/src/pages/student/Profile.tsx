@@ -27,6 +27,17 @@ const HOSTEL_OPTIONS = [
   'Technova',
 ];
 
+const COURSE_OPTIONS = [
+  'B.Tech',
+  'BBA',
+  'MBA',
+  'BCA',
+  'Polytechnic',
+  'B-Pharma',
+  'D-Pharma',
+  'Pharm-D',
+];
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -34,10 +45,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: user?.name || '',
-    phone: user?.phone || '',
+    phone: (user?.phone || '').replace(/\D/g, ''),
     course: user?.course || '',
-    year: user?.year || '',
-    room: user?.room || '',
+    year: (user?.year || '').replace(/\D/g, ''),
+    room: (user?.room || '').replace(/\D/g, ''),
     hostel: user?.hostel || '',
   });
 
@@ -59,6 +70,18 @@ export default function ProfilePage() {
     }
   };
 
+  const handleFieldChange = (field: string, rawValue: string) => {
+    let value = rawValue;
+    if (field === 'phone') {
+      value = rawValue.replace(/\D/g, '').slice(0, 15);
+    } else if (field === 'year') {
+      value = rawValue.replace(/\D/g, '').slice(0, 4);
+    } else if (field === 'room') {
+      value = rawValue.replace(/\D/g, '').slice(0, 8);
+    }
+    setForm(f => ({ ...f, [field]: value }));
+  };
+
   const initials =
     user?.name
       ?.split(' ')
@@ -67,7 +90,17 @@ export default function ProfilePage() {
       .slice(0, 2)
       .toUpperCase() || '??';
 
-  const infoItems = [
+  const infoItems: Array<{
+    icon: any;
+    label: string;
+    value: string;
+    field: string | null;
+    editable: boolean;
+    color: string;
+    type?: string;
+    inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+    pattern?: string;
+  }> = [
     {
       icon: Home,
       label: 'Room Number',
@@ -75,6 +108,9 @@ export default function ProfilePage() {
       field: 'room',
       editable: true,
       color: 'text-orange-400',
+      type: 'tel',
+      inputMode: 'numeric',
+      pattern: '[0-9]*',
     },
     {
       icon: Building2,
@@ -91,6 +127,7 @@ export default function ProfilePage() {
       field: 'course',
       editable: true,
       color: 'text-purple-400',
+      type: 'text',
     },
     {
       icon: GraduationCap,
@@ -99,6 +136,9 @@ export default function ProfilePage() {
       field: 'year',
       editable: true,
       color: 'text-emerald-400',
+      type: 'text',
+      inputMode: 'numeric',
+      pattern: '[0-9]*',
     },
     {
       icon: Phone,
@@ -107,6 +147,9 @@ export default function ProfilePage() {
       field: 'phone',
       editable: true,
       color: 'text-blue-400',
+      type: 'tel',
+      inputMode: 'numeric',
+      pattern: '[0-9]*',
     },
     {
       icon: IdCard,
@@ -244,7 +287,13 @@ export default function ProfilePage() {
               </>
             ) : (
               <button
-                onClick={() => setEditing(true)}
+                onClick={() => {
+                  setEditing(true);
+                  setForm(f => ({
+                    ...f,
+                    room: f.room ? f.room.replace(/\D/g, '') : '',
+                  }));
+                }}
                 className="w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all active:scale-95 flex items-center justify-center gap-2 border hover:border-indigo-500/40"
                 style={{
                   background: 'var(--bg-card)',
@@ -307,9 +356,9 @@ export default function ProfilePage() {
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    <input
-                      className="w-full text-xs font-semibold rounded-lg px-2 py-1 mt-0.5 border focus:outline-none focus:border-indigo-400"
+                  ) : item.field === 'course' ? (
+                    <select
+                      className="w-full text-xs font-semibold rounded-lg px-2 py-1 mt-0.5 cursor-pointer border focus:outline-none focus:border-indigo-400"
                       style={{
                         background: 'var(--input-bg)',
                         color: 'var(--input-text)',
@@ -317,6 +366,30 @@ export default function ProfilePage() {
                       }}
                       value={(form as any)[item.field] || ''}
                       onChange={e => setForm(f => ({ ...f, [item.field!]: e.target.value }))}
+                    >
+                      <option value="" disabled>Select course</option>
+                      {form.course && !COURSE_OPTIONS.includes(form.course) && (
+                        <option value={form.course}>{form.course}</option>
+                      )}
+                      {COURSE_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={item.type || 'text'}
+                      inputMode={item.inputMode}
+                      pattern={item.pattern}
+                      className="w-full text-xs font-semibold rounded-lg px-2 py-1 mt-0.5 border focus:outline-none focus:border-indigo-400"
+                      style={{
+                        background: 'var(--input-bg)',
+                        color: 'var(--input-text)',
+                        borderColor: 'var(--border-input)',
+                      }}
+                      value={(form as any)[item.field] || ''}
+                      onChange={e => handleFieldChange(item.field!, e.target.value)}
                       placeholder={`Enter ${item.label.toLowerCase()}`}
                     />
                   )
