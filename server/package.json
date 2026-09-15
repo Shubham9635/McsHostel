@@ -1,6 +1,7 @@
 {
   "name": "hostel360-server",
   "version": "1.0.0",
+  "author": "Shubham Gupta",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",

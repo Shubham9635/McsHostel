@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { messApi } from '../../services/api';
 import StarRating from '../../components/StarRating';
 import toast from 'react-hot-toast';
@@ -14,6 +14,8 @@ import {
   Loader2,
   EyeOff,
   Star,
+  Lock,
+  Timer,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -85,23 +87,66 @@ const MEAL_CONFIG: Record<MealType, MealConfigItem> = {
 
 const ORDERED_MEALS: MealType[] = ['breakfast', 'lunch', 'snacks', 'dinner'];
 
+// ── Meal Review Time Windows ─────────────────────────────────────────────────
+// Review opens at meal start time; closes exactly 1 hour after meal ends.
+
+interface MealWindow {
+  openH: number; openM: number;   // 24h meal start (= review window opens)
+  closeH: number; closeM: number; // 24h cutoff   (= meal end + 1 hr grace)
+  openLabel: string;              // e.g. "7:30 AM"
+  closeLabel: string;             // e.g. "10:00 AM"
+}
+
+const MEAL_WINDOWS: Record<MealType, MealWindow> = {
+  breakfast: { openH: 7,  openM: 30, closeH: 10, closeM: 0,  openLabel: '7:30 AM',  closeLabel: '10:00 AM' },
+  lunch:     { openH: 12, openM: 45, closeH: 15, closeM: 15, openLabel: '12:45 PM', closeLabel: '3:15 PM'  },
+  snacks:    { openH: 17, openM: 0,  closeH: 18, closeM: 30, openLabel: '5:00 PM',  closeLabel: '6:30 PM'  },
+  dinner:    { openH: 19, openM: 30, closeH: 22, closeM: 0,  openLabel: '7:30 PM',  closeLabel: '10:00 PM' },
+};
+
+type MealState = 'before' | 'open' | 'closed';
+
+function getMealState(meal: MealType, now: Date): MealState {
+  const cur   = now.getHours() * 60 + now.getMinutes();
+  const w     = MEAL_WINDOWS[meal];
+  const open  = w.openH  * 60 + w.openM;
+  const close = w.closeH * 60 + w.closeM;
+  if (cur < open)  return 'before';
+  if (cur >= close) return 'closed';
+  return 'open';
+}
+
+/** Returns a friendly countdown string like "2h 15m" or "45m" until a target HH:MM. */
+function formatCountdown(now: Date, targetH: number, targetM: number): string {
+  const target = new Date(now);
+  target.setHours(targetH, targetM, 0, 0);
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) return '';
+  const totalMins = Math.floor(diffMs / 60_000);
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return '<1m';
+}
+
 // ── Skeletons ─────────────────────────────────────────────────────────────────
 
 function MealCardSkeleton() {
   return (
     <div
-      className="rounded-2xl p-3.5 border border-white/5 relative overflow-hidden"
-      style={{ background: 'rgba(17, 14, 40, 0.65)' }}
+      className="rounded-2xl p-3.5 border border-[var(--border-color)] relative overflow-hidden"
+      style={{ background: 'var(--bg-card)' }}
     >
       <div className="flex items-center justify-between mb-2.5">
-        <div className="h-5 w-32 skeleton-dark rounded-lg" />
-        <div className="h-5 w-14 skeleton-dark rounded-lg" />
+        <div className="h-5 w-32 skeleton-pulse rounded-lg" />
+        <div className="h-5 w-14 skeleton-pulse rounded-lg" />
       </div>
-      <div className="h-7 w-44 skeleton-dark rounded-lg mb-2" />
-      <div className="h-8 w-full skeleton-dark rounded-xl mb-2" />
+      <div className="h-7 w-44 skeleton-pulse rounded-lg mb-2" />
+      <div className="h-8 w-full skeleton-pulse rounded-xl mb-2" />
       <div className="flex items-center justify-between">
-        <div className="h-4 w-28 skeleton-dark rounded-md" />
-        <div className="h-7 w-20 skeleton-dark rounded-lg" />
+        <div className="h-4 w-28 skeleton-pulse rounded-md" />
+        <div className="h-7 w-20 skeleton-pulse rounded-lg" />
       </div>
     </div>
   );
@@ -127,6 +172,23 @@ export default function MessFeedbackPage() {
     dinner: { rating: 0, review: '', anonymous: false },
   });
   const [submitting, setSubmitting] = useState<MealType | null>(null);
+
+  // Live clock — re-evaluated every 30 s so lock states update automatically
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const mealStates = useMemo<Record<MealType, MealState>>(
+    () => ({
+      breakfast: getMealState('breakfast', now),
+      lunch:     getMealState('lunch',     now),
+      snacks:    getMealState('snacks',    now),
+      dinner:    getMealState('dinner',    now),
+    }),
+    [now],
+  );
 
   // Load today's meals
   const loadTodayMeals = () => {
@@ -302,6 +364,8 @@ export default function MessFeedbackPage() {
                   const form = forms[mealKey];
                   const hasExisting = !!summary?.my_review;
                   const isSubmitting = submitting === mealKey;
+                  const mealState = mealStates[mealKey];
+                  const mealWin   = MEAL_WINDOWS[mealKey];
 
                   return (
                     <div
@@ -385,113 +449,153 @@ export default function MessFeedbackPage() {
                           ) : null}
                         </div>
 
-                        {/* ── Compact Rating Row (Label + Stars inline) ────────── */}
-                        <div className="flex items-center justify-between mb-2 px-0.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Your Rating
-                          </span>
-                          <StarRating
-                            value={form.rating}
-                            onChange={v =>
-                              setForms(prev => ({
-                                ...prev,
-                                [mealKey]: { ...prev[mealKey], rating: v },
-                              }))
-                            }
-                            size="md"
-                            name={config.label}
-                          />
-                        </div>
+                        {/* ── Time-Gated Form Area ────────────────────────────────── */}
 
-                        {/* ── Compact Review Input ────────────────────────────── */}
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            id={`mess-review-${mealKey}`}
-                            value={form.review}
-                            onChange={e =>
-                              setForms(prev => ({
-                                ...prev,
-                                [mealKey]: { ...prev[mealKey], review: e.target.value },
-                              }))
-                            }
-                            placeholder={config.placeholder}
-                            className="w-full px-3 py-1.5 rounded-xl text-xs focus:outline-none transition-all duration-200 border focus:border-indigo-500/60"
-                            style={{
-                              background: 'var(--input-bg)',
-                              borderColor: 'var(--border-input)',
-                              color: 'var(--input-text)',
-                            }}
-                          />
-                        </div>
-
-                        {/* ── Footer: Anonymous Checkbox + Submit Button ─────── */}
-                        <div className="flex items-center justify-between gap-2 pt-0.5">
-                          {/* Anonymous Checkbox */}
-                          <label
-                            htmlFor={`anon-${mealKey}`}
-                            className="flex items-center gap-1.5 cursor-pointer select-none group py-0.5"
+                        {/* BEFORE: meal hasn't started yet — show lock banner */}
+                        {mealState === 'before' && (
+                          <div
+                            className="rounded-xl flex flex-col items-center justify-center gap-2 py-5 mt-1 border border-dashed"
+                            style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
                           >
-                            <input
-                              type="checkbox"
-                              id={`anon-${mealKey}`}
-                              checked={form.anonymous}
-                              onChange={e =>
-                                setForms(prev => ({
-                                  ...prev,
-                                  [mealKey]: { ...prev[mealKey], anonymous: e.target.checked },
-                                }))
-                              }
-                              className="sr-only peer"
-                            />
                             <div
-                              className="w-3.5 h-3.5 rounded border border-slate-600 peer-checked:bg-indigo-600 peer-checked:border-indigo-500 flex items-center justify-center transition-all duration-150"
-                              style={{ background: 'rgba(255, 255, 255, 0.05)' }}
+                              className="w-9 h-9 rounded-full flex items-center justify-center"
+                              style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)' }}
                             >
-                              {form.anonymous && (
-                                <svg
-                                  className="w-2.5 h-2.5 text-white"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
+                              <Lock className="w-4 h-4 text-indigo-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
+                                🔒 Review opens at {mealWin.openLabel}
+                              </p>
+                              {formatCountdown(now, mealWin.openH, mealWin.openM) && (
+                                <p
+                                  className="text-[10px] mt-1 font-medium flex items-center justify-center gap-1"
+                                  style={{ color: 'var(--text-muted)' }}
                                 >
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                                  <Timer className="w-3 h-3 shrink-0" />
+                                  Opens in {formatCountdown(now, mealWin.openH, mealWin.openM)}
+                                </p>
                               )}
                             </div>
-                            <span className="text-[11px] text-slate-400 font-medium group-hover:text-slate-200 transition-colors">
-                              Submit anonymously
-                            </span>
-                          </label>
+                          </div>
+                        )}
 
-                          {/* Modern Compact Submit Button */}
-                          <button
-                            id={`submit-${mealKey}-btn`}
-                            type="button"
-                            onClick={() => handleSubmit(mealKey)}
-                            disabled={isSubmitting}
-                            className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs text-white transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-indigo-500/20"
-                            style={{
-                              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                              boxShadow: '0 2px 10px rgba(99, 102, 241, 0.3)',
-                            }}
+                        {/* CLOSED: grace period over — show closed banner */}
+                        {mealState === 'closed' && (
+                          <div
+                            className="rounded-xl flex flex-col items-center justify-center gap-2 py-5 mt-1 border border-dashed"
+                            style={{ borderColor: 'var(--border-color)', background: 'var(--bg-secondary)' }}
                           >
-                            {isSubmitting ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin text-white" />
-                                <span>...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>{hasExisting ? 'Update' : 'Submit'}</span>
-                                <ArrowRight className="w-3 h-3" />
-                              </>
-                            )}
-                          </button>
-                        </div>
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center"
+                              style={{ background: 'rgba(100,116,139,0.10)', border: '1px solid rgba(100,116,139,0.20)' }}
+                            >
+                              <Clock className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+                                ⏰ Review closed for today
+                              </p>
+                              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                Was open until {mealWin.closeLabel}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* OPEN: review window is active — show normal form */}
+                        {mealState === 'open' && (
+                          <>
+                            {/* ── Compact Rating Row (Label + Stars inline) ── */}
+                            <div className="flex items-center justify-between mb-2 px-0.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Your Rating
+                              </span>
+                              <StarRating
+                                value={form.rating}
+                                onChange={v =>
+                                  setForms(prev => ({
+                                    ...prev,
+                                    [mealKey]: { ...prev[mealKey], rating: v },
+                                  }))
+                                }
+                                size="md"
+                                name={config.label}
+                              />
+                            </div>
+
+                            {/* ── Compact Review Input ─────────────────────── */}
+                            <div className="mb-2">
+                              <input
+                                type="text"
+                                id={`mess-review-${mealKey}`}
+                                value={form.review}
+                                onChange={e =>
+                                  setForms(prev => ({
+                                    ...prev,
+                                    [mealKey]: { ...prev[mealKey], review: e.target.value },
+                                  }))
+                                }
+                                placeholder={config.placeholder}
+                                className="w-full px-3 py-1.5 rounded-xl text-xs focus:outline-none transition-all duration-200 border focus:border-indigo-500/60"
+                                style={{
+                                  background: 'var(--input-bg)',
+                                  borderColor: 'var(--border-input)',
+                                  color: 'var(--input-text)',
+                                }}
+                              />
+                            </div>
+
+                            {/* ── Footer: Anonymous Checkbox + Submit Button ─ */}
+                            <div className="flex items-center justify-between gap-2 pt-0.5">
+                              <label
+                                htmlFor={`anon-${mealKey}`}
+                                className="flex items-center gap-1.5 cursor-pointer select-none group py-0.5"
+                              >
+                                <input
+                                  type="checkbox"
+                                  id={`anon-${mealKey}`}
+                                  checked={form.anonymous}
+                                  onChange={e =>
+                                    setForms(prev => ({
+                                      ...prev,
+                                      [mealKey]: { ...prev[mealKey], anonymous: e.target.checked },
+                                    }))
+                                  }
+                                  className="w-3.5 h-3.5 rounded cursor-pointer flex-shrink-0"
+                                  style={{ accentColor: '#6366f1' }}
+                                />
+                                <span className="text-[11px] text-[var(--text-secondary)] font-medium group-hover:text-[var(--text-primary)] transition-colors">
+                                  Submit anonymously
+                                </span>
+                              </label>
+
+                              <button
+                                id={`submit-${mealKey}-btn`}
+                                type="button"
+                                onClick={() => handleSubmit(mealKey)}
+                                disabled={isSubmitting}
+                                className="inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs text-white transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-indigo-500/20"
+                                style={{
+                                  background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                  boxShadow: '0 2px 10px rgba(99, 102, 241, 0.3)',
+                                }}
+                              >
+                                {isSubmitting ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin text-white" />
+                                    <span>...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{hasExisting ? 'Update' : 'Submit'}</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </>
+                        )}
 
                       </div>
                     </div>
@@ -510,7 +614,7 @@ export default function MessFeedbackPage() {
                 {[1, 2, 3, 4].map(i => (
                   <div
                     key={i}
-                    className="h-20 rounded-2xl skeleton-dark border border-white/5"
+                    className="h-20 rounded-2xl skeleton-pulse border border-[var(--border-color)]"
                   />
                 ))}
               </div>

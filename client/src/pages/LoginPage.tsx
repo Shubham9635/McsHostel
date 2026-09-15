@@ -376,41 +376,6 @@ export default function LoginPage() {
         <span>Continue with Google</span>
       </button>
 
-      {/* Direct Login (No OTP) Shortcuts */}
-      <div className="pt-3 border-t border-white/[0.08]">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            Direct Access (No OTP)
-          </span>
-          <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Instant</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            id="direct-student-login-btn"
-            type="button"
-            onClick={() => handleDirectLogin('student@hostel.hub')}
-            disabled={loading}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-          >
-            <UserIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-            <span>Student Login</span>
-          </button>
-          <button
-            id="direct-admin-login-btn"
-            type="button"
-            onClick={() => handleDirectLogin('admin@hostel.hub')}
-            disabled={loading}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-600 dark:text-purple-300 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-            <span>Admin Login</span>
-          </button>
-        </div>
-        <p className="text-[10px] text-[var(--text-muted)] mt-2 text-center">
-          Or type <span className="text-[var(--text-secondary)] font-mono">student@hostel.hub</span> / <span className="text-[var(--text-secondary)] font-mono">admin@hostel.hub</span> above
-        </p>
-      </div>
     </form>
   );
 

@@ -216,7 +216,7 @@ router.post('/verify-otp', async (req: AuthRequest, res: Response) => {
     }
 
     let is_new_user = false;
-    const ADMIN_EMAILS = ['admin@hostelhub.demo', 'admin@hostel.hub', 'hostelhub.support@gmail.com'];
+    const ADMIN_EMAILS = ['admin@hostelhub.demo', 'admin@hostel.hub', 'hostelhub.support@gmail.com', 'akashstar321123@gmail.com'];
     const isAdminEmail = ADMIN_EMAILS.includes(normalizedEmail);
 
     // If new user with real email, auto-provision profile
@@ -330,7 +330,7 @@ router.post('/google-login', async (req: AuthRequest, res: Response) => {
     }
 
     let is_new_user = false;
-    const ADMIN_EMAILS = ['admin@hostelhub.demo', 'admin@hostel.hub', 'hostelhub.support@gmail.com'];
+    const ADMIN_EMAILS = ['admin@hostelhub.demo', 'admin@hostel.hub', 'hostelhub.support@gmail.com', 'akashstar321123@gmail.com'];
     const isAdminEmail = ADMIN_EMAILS.includes(normalizedEmail);
 
     if (!profile) {

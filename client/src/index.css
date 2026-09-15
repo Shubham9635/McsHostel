@@ -50,6 +50,9 @@
     --scrollbar-thumb: #312e81;
 
     --bottom-nav-height: 64px;
+
+    --skeleton-base: rgba(255,255,255,0.05);
+    --skeleton-shine: rgba(255,255,255,0.10);
   }
 
   /* ── Light Theme Tokens ─────────────────────────────────────────────────── */
@@ -83,9 +86,12 @@
     --input-text: #0f172a;
     --input-placeholder: #94a3b8;
 
-    --scrollbar-thumb: #6366f1;
+    --scrollbar-thumb: #c7d2fe;
 
     --bottom-nav-height: 64px;
+
+    --skeleton-base: rgba(0,0,0,0.07);
+    --skeleton-shine: rgba(0,0,0,0.13);
   }
 
   body {
@@ -269,6 +275,18 @@
     rgba(255,255,255,0.04) 25%,
     rgba(255,255,255,0.09) 50%,
     rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* Theme-aware skeleton — adapts to light and dark mode via CSS vars */
+.skeleton-pulse {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base, rgba(0,0,0,0.07)) 25%,
+    var(--skeleton-shine, rgba(0,0,0,0.13)) 50%,
+    var(--skeleton-base, rgba(0,0,0,0.07)) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;

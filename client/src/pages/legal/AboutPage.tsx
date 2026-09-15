@@ -103,6 +103,10 @@ export default function AboutPage() {
               Hostel<span style={{ color: '#f97316' }}>Hub</span>
             </h1>
 
+            <p className="text-[10.5px] sm:text-[11px] text-[var(--text-secondary)] mt-0.5 truncate leading-tight">
+              Official support — Shubham Gupta, HostelHub Developer
+            </p>
+
             <p className="text-base sm:text-lg font-bold text-indigo-200 mt-1">
               &ldquo;Connect. Report. Improve.&rdquo;
             </p>
@@ -205,22 +209,22 @@ export default function AboutPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg sm:text-xl font-bold" style={{ color: 'var(--text-heading)' }}>
-                Developer Team &amp; Official Support
+                Developer &amp; Official Support
               </h2>
               <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                For official assistance, campus integrations, or technical reports, reach our team directly:
+                Built by <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Shubham Gupta</span>. For official assistance, campus integrations, or technical reports, reach out directly:
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <a
-                href="https://wa.me/91911811575"
+                href="https://wa.me/919118111575"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <Smartphone className="w-3.5 h-3.5" />
-                <span>+91 91181 11575</span>
+                <span>+91 9118111575</span>
               </a>
               <a
                 href="mailto:hostelhub.support@gmail.com"

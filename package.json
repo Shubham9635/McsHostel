@@ -1,6 +1,7 @@
 {
   "name": "hostelhub",
   "version": "1.0.0",
+  "author": "Shubham Gupta",
   "private": true,
   "scripts": {
     "dev": "npm run dev --prefix client",

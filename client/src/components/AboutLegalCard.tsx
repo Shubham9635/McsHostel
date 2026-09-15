@@ -28,7 +28,7 @@ function WhatsAppIcon({ className = 'w-4 h-4' }: { className?: string }) {
 }
 
 const WHATSAPP_URL =
-  'https://wa.me/91911811575?text=' +
+  'https://wa.me/919118111575?text=' +
   encodeURIComponent('Hi HostelHub Team, I would like to share some feedback/suggestions about the app.');
 
 const EMAIL_URL =
@@ -176,7 +176,7 @@ export default function AboutLegalCard() {
                   </span>
                 </div>
                 <p className="text-[10.5px] sm:text-[11px] text-[var(--text-secondary)] mt-0.5 truncate leading-tight">
-                  Official WhatsApp &amp; Email developer communication
+                  Official WhatsApp &amp; Email developer communication &middot; Shubham Gupta
                 </p>
               </div>
             </div>
@@ -190,7 +190,7 @@ export default function AboutLegalCard() {
           {feedbackOpen && (
             <div className="pt-1.5 pb-2.5 space-y-2.5 animate-fade-in border-t border-[var(--border-subtle)] mt-1">
               <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-tight pt-1">
-                Contact the HostelHub development team. We&apos;d love to hear from you.
+                Contact developer Shubham Gupta &amp; the HostelHub team. We&apos;d love to hear from you.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -200,7 +200,7 @@ export default function AboutLegalCard() {
                   target="_blank"
                   rel="noopener noreferrer"
                   id="btn-whatsapp-support"
-                  aria-label="Contact WhatsApp Support at +91 91181 11575"
+                  aria-label="Contact WhatsApp Support at +91 9118111575"
                   className="group relative rounded-xl p-2.5 sm:p-3 border transition-all duration-200 block text-left active:scale-[0.98] hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                   style={{
                     background: 'var(--bg-secondary)',
@@ -241,7 +241,7 @@ export default function AboutLegalCard() {
                           className="text-[10.5px] sm:text-[11.5px] font-bold tracking-wide"
                           style={{ color: 'var(--text-primary)' }}
                         >
-                          +91 91181 11575
+                          +91 9118111575
                         </span>
                         <span className="text-[10.5px] sm:text-[11px] font-bold text-emerald-500 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform shrink-0">
                           Share feedback &rarr;

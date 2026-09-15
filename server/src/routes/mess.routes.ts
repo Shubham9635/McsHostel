@@ -103,6 +103,38 @@ router.post('/reviews', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Invalid meal_type.' });
     }
 
+    // ── Server-side time-window enforcement (IST = UTC+5:30) ──────────────────
+    // Prevents bypass via device clock manipulation or direct API calls.
+    // Review window = meal start time → meal end time + 1 hour grace period.
+    const MEAL_WINDOWS_BE: Record<string, {
+      openH: number; openM: number;
+      closeH: number; closeM: number;
+      label: string;
+    }> = {
+      breakfast: { openH: 7,  openM: 30, closeH: 10, closeM: 0,  label: 'Breakfast' },
+      lunch:     { openH: 12, openM: 45, closeH: 15, closeM: 15, label: 'Lunch'     },
+      snacks:    { openH: 17, openM: 0,  closeH: 18, closeM: 30, label: 'Snacks'    },
+      dinner:    { openH: 19, openM: 30, closeH: 22, closeM: 0,  label: 'Dinner'    },
+    };
+    const mealWindow = MEAL_WINDOWS_BE[meal_type];
+    if (mealWindow) {
+      const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC+5:30
+      const curMin  = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
+      const openMin = mealWindow.openH  * 60 + mealWindow.openM;
+      const closeMin = mealWindow.closeH * 60 + mealWindow.closeM;
+      if (curMin < openMin || curMin >= closeMin) {
+        const fmt = (h: number, m: number) => {
+          const p   = h >= 12 ? 'PM' : 'AM';
+          const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+          return `${h12}:${String(m).padStart(2, '0')} ${p}`;
+        };
+        return res.status(403).json({
+          error: `Review window for ${mealWindow.label} is closed. Reviews are accepted from ${fmt(mealWindow.openH, mealWindow.openM)} to ${fmt(mealWindow.closeH, mealWindow.closeM)} IST.`,
+        });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Validate date format
     const reviewDate = new Date(date);
     if (isNaN(reviewDate.getTime())) {

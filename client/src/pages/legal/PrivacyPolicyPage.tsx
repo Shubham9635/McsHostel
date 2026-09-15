@@ -238,7 +238,7 @@ export default function PrivacyPolicyPage() {
           <p>If you have any questions or privacy concerns regarding this policy, please reach out directly:</p>
           <div className="mt-2 text-xs">
             <p><strong>Support Email:</strong> <a href="mailto:hostelhub.support@gmail.com" className="text-indigo-500 hover:underline">hostelhub.support@gmail.com</a></p>
-            <p><strong>WhatsApp Support:</strong> <a href="https://wa.me/91911811575" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">+91 91181 11575</a></p>
+            <p><strong>WhatsApp Support:</strong> <a href="https://wa.me/919118111575" target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:underline">+91 9118111575</a></p>
           </div>
         </div>
       ),

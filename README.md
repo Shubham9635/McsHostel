@@ -195,10 +195,18 @@ HostelHub uses passwordless **Email OTP Authentication** dispatched via Gmail SM
 
 | Role | Email | Access |
 |---|---|---|
-| Admin | `hostelhub.support@gmail.com` | Opens Admin Panel (`/admin`) directly |
+| Admin | `hostelhub.support@gmail.com`, `akashstar321123@gmail.com` | Opens Admin Panel (`/admin`) directly |
 | Student | Any valid student email | Student Dashboard (`/student`) after onboarding |
 | Demo Student | `student@hostelhub.demo` | Student Dashboard (`/student`) |
 | Demo Admin | `admin@hostelhub.demo` | Admin Dashboard (`/admin`) |
+
+---
+
+## Developer
+
+Developed & Maintained by **Shubham Gupta**.
+- **WhatsApp**: [+91 9118111575](https://wa.me/919118111575)
+- **Email**: hostelhub.support@gmail.com
 
 ---
 
